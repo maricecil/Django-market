@@ -1,0 +1,215 @@
+{% csrf_token %}
+{% load humanize %}
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="flex flex-col md:flex-row">
+        <!-- 상품 이미지 섹션 -->
+        <div class="md:w-1/2">
+            <div class="relative w-96 h-96 bg-gray-100 rounded-lg overflow-hidden">
+                {% if product.is_sold %}
+                <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                    <span class="text-white text-xl font-bold px-6 py-2 bg-black bg-opacity-50 rounded-full">
+                        거래완료
+                    </span>
+                </div>
+                {% endif %}
+                <!-- 메인 이미지 -->
+                <div class="relative h-[400px]">
+                    <img src="{{ product.image.url }}" 
+                         alt="{{ product.name }}" 
+                         class="w-full h-full object-cover">
+                    
+                    <!-- 이미지 개수 표시 (추가 이미지가 있는 경우) -->
+                    {% if product.additional_images.all %}
+                    <div class="absolute bottom-4 right-4 bg-black/60 text-white 
+                                px-2 py-1 rounded-md text-sm">
+                        1/{{ product.additional_images.all|length|add:1 }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 추가 이미지 미리보기 -->
+                {% if product.additional_images.all %}
+                <div class="flex gap-2 p-4 overflow-x-auto">
+                    <button class="w-20 h-20 rounded-md overflow-hidden 
+                                 ring-2 ring-orange-500 flex-shrink-0">
+                        <img src="{{ product.image.url }}" 
+                             alt="메인 이미지" 
+                             class="w-full h-full object-cover">
+                    </button>
+                    {% for img in product.additional_images.all %}
+                    <button class="w-20 h-20 rounded-md overflow-hidden 
+                                 hover:ring-2 hover:ring-orange-500 flex-shrink-0">
+                        <img src="{{ img.image.url }}" 
+                             alt="추가 이미지 {{ forloop.counter }}" 
+                             class="w-full h-full object-cover">
+                    </button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 상품 정보 섹션 -->
+        <div class="md:w-1/2 p-6 space-y-4">
+            <!-- 제목과 수정/삭제 버튼을 같은 줄에 배치 -->
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">{{ product.name }}</h1>
+                {% if user == product.seller %}
+                    <div class="flex gap-2">
+                        <a href="{% url 'products:update' product.id %}" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                            <svg class="w-4 h-4 mr-2" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            수정
+                        </a>
+                        <form method="post" action="{% url 'products:delete' product.id %}" 
+                              onsubmit="return confirm('정말 이 상품을 삭제하시겠습니까?');" 
+                              class="inline">
+                            {% csrf_token %}
+                            <button type="submit" 
+                                    class="inline-flex items-center px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors">
+                                <svg class="w-4 h-4 mr-2" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                삭제
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- 나머지 상품 정보는 그대로 유지 -->
+            <div class="text-3xl font-bold text-gray-900">
+                {{ product.price|intcomma }}원
+            </div>
+            
+            <!-- 상품 통계 -->
+            <div class="flex gap-4 text-sm text-gray-500">
+                <span id="likeCount">❤️ {{ product.like_count }}</span>
+                <span>👁️ {{ product.view_count }}</span>
+                <span>⏰ {{ product.created_at|timesince }} 전</span>
+            </div>
+            
+            <hr class="my-4">
+            
+            <!-- 상품 상세 정보 -->
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">상품상태</span>
+                    <span class="font-medium">{{ product.get_condition_display }}</span>
+                </div>
+                {% if product.size %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">사이즈</span>
+                    <span class="font-medium">{{ product.get_size_display }}</span>
+                </div>
+                {% endif %}
+                {% if product.trade_type %}
+                <div class="flex justify-between">
+                    <span class="text-gray-600">거래방법</span>
+                    <span class="font-medium">{{ product.get_trade_type_display }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- 상품 설명 -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-gray-600 whitespace-pre-line">{{ product.description }}</p>
+            </div>
+            
+            <!-- 액션 버튼 -->
+            <div class="flex gap-4">
+                <!-- 찜하기 버튼 -->
+                <button onclick="toggleCart('{{ product.id }}')" 
+                        class="flex-1 h-12 flex items-center justify-center gap-2 
+                               {% if product in user.cart.all %}bg-blue-600 text-white{% else %}bg-gray-100 text-gray-600{% endif %} 
+                               rounded-md hover:opacity-90 transition-colors">
+                    <svg class="w-5 h-5" fill="{% if product in user.cart.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <span>{% if product in user.cart.all %}찜완료{% else %}찜하기{% endif %}</span>
+                </button>
+
+                <!-- 채팅하기 버튼 -->
+                <button onclick="chatSystem.openModal()" 
+                        class="flex-1 h-12 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors 
+                               flex items-center justify-center gap-2"
+                        data-is-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+                        data-is-seller="{% if user == product.seller %}true{% else %}false{% endif %}"
+                        data-login-url="{% url 'accounts:login' %}">
+                    <svg class="w-5 h-5" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                    </svg>
+                    채팅하기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function toggleCart(productId) {
+    try {
+        const response = await fetch(`/${productId}/cart/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'success') {
+                const button = document.querySelector(`button[onclick="toggleCart('${productId}')"]`);
+                const svg = button.querySelector('svg');
+                const span = button.querySelector('span');
+                const likeCount = document.getElementById('likeCount');
+                
+                // 버튼 상태 변경
+                if (data.in_cart) {
+                    button.classList.remove('bg-gray-100', 'text-gray-600');
+                    button.classList.add('bg-blue-600', 'text-white');
+                    svg.setAttribute('fill', 'currentColor');
+                    span.textContent = '찜완료';
+                } else {
+                    button.classList.remove('bg-blue-600', 'text-white');
+                    button.classList.add('bg-gray-100', 'text-gray-600');
+                    svg.setAttribute('fill', 'none');
+                    span.textContent = '찜하기';
+                }
+                
+                // 좋아요 수 업데이트
+                if (likeCount) {
+                    likeCount.textContent = `❤️ ${data.like_count}`;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('찜하기 처리 중 오류가 발생했습니다.');
+    }
+}
+
+function openInquiryModal() {
+    const button = document.querySelector('[onclick="openInquiryModal()"]');
+    const isAuthenticated = button.dataset.isAuthenticated === 'true';
+    const isSeller = button.dataset.isSeller === 'true';
+    const loginUrl = button.dataset.loginUrl;
+    
+    if (!isAuthenticated) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = loginUrl;
+        return;
+    }
+    
+    if (isSeller) {
+        alert('자신의 상품에는 문의할 수 없습니다.');
+        return;
+    }
+    
+    document.getElementById('inquiryModal').classList.remove('hidden');
+}
+</script>

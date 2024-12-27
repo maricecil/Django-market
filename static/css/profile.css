@@ -1,0 +1,73 @@
+/* 토글 버튼 컨테이너 */
+.toggle-button {
+    position: relative;
+    display: inline-block;
+    width: 44px;  /* 2.75rem */
+    height: 24px; /* 1.5rem */
+    background-color: #e5e7eb;
+    border-radius: 999px;
+    transition: all 200ms;
+}
+
+/* 토글 핸들 */
+.toggle-handle {
+    position: absolute;
+    top: 2px;    /* 0.125rem */
+    left: 2px;   /* 0.125rem */
+    width: 20px; /* 1.25rem */
+    height: 20px;/* 1.25rem */
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 200ms;
+}
+
+/* 체크박스 체크 시 스타일 */
+.peer:checked ~ .toggle-button {
+    background-color: black;
+}
+
+.peer:checked ~ .toggle-button .toggle-handle {
+    transform: translateX(20px);
+}
+
+/* 포커스 스타일 */
+.peer:focus ~ .toggle-button {
+    outline: 2px solid black;
+    outline-offset: 2px;
+}
+
+/* 성별 라디오 버튼 스타일만 유지 */
+input[type="radio"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* 성별 라디오 버튼 라벨 스타일 */
+input[type="radio"] + label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 200ms;
+}
+
+input[type="radio"]:checked + label {
+    background-color: black;
+    color: white;
+    border-color: black;
+}
+
+input[type="radio"] + label:hover:not(:checked) {
+    background-color: #f9fafb;
+} 

@@ -1,0 +1,388 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+    {% include 'products/components/product_info.html' %}
+    
+    <!-- 판매자 프로필 -->
+    <div class="mt-8">
+        <h3 class="text-lg font-bold mb-4">판매자 정보</h3>
+        {% include 'components/profile_detail_card.html' with seller=product.seller %}
+    </div>
+    
+    <!-- 거래 후기 섹션 -->
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold">거래 후기 ({{ review_count }})</h3>
+            {% if user.is_authenticated and product.is_sold and product.buyer == user %}
+                <button onclick="openReviewModal()" 
+                        class="text-sm text-orange-500 hover:text-orange-600">
+                    + 후기 작성하기
+                </button>
+            {% endif %}
+        </div>
+        
+        {% if reviews %}
+            <div class="flex flex-wrap gap-4">
+                {% for review in reviews %}
+                <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-4 w-[calc(33.333%-1rem)]">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="font-medium">{{ review.user.username }}</span>
+                        <div class="text-yellow-400 text-sm">
+                            {% with ''|ljust:review.rating as stars %}
+                            {% for _ in stars %}⭐{% endfor %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-3">{{ review.content }}</p>
+                    <span class="text-xs text-gray-500">{{ review.created_at|timesince }} 전</span>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+                <p class="text-gray-500">아직 거래 후기가 없습니다.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- 판매자의 다른 상품 -->
+    <div class="mt-8">
+        <h3 class="text-lg font-bold mb-4">판매자의 다른 상품</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {% for item in seller_products %}
+            <a href="{% url 'products:detail' item.id %}" 
+               class="group block bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+                <div class="relative">
+                    {% if item.is_sold %}
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                        <span class="text-white text-xl font-bold px-6 py-2 bg-black bg-opacity-50 rounded-full">
+                            거래완료
+                        </span>
+                    </div>
+                    {% endif %}
+                    <div class="aspect-w-1 aspect-h-1">
+                        {% if item.image %}
+                        <img src="{{ item.image.url }}" 
+                             alt="{{ item.name }}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="p-3">
+                    <h4 class="font-medium text-gray-900 truncate">{{ item.name }}</h4>
+                    <div class="mt-1 flex items-center justify-between">
+                        <span class="text-xs text-gray-500">{{ item.get_category_display }}</span>
+                        <p class="text-orange-500 font-bold">{{ item.price|intcomma }}원</p>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 하단 고정 채팅 버튼 -->
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t md:hidden">
+        <button type="button" 
+                id="chatButton"
+                class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <svg class="w-5 h-5" aria-hidden="true" focusable="false">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <span>채팅하기</span>
+        </button>
+    </div>
+</div>
+
+<!-- 후기 작성 모달 -->
+<div id="reviewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="min-h-screen px-4 text-center">
+        <div class="fixed inset-0" aria-hidden="true">
+            <div class="min-h-screen flex items-center justify-center">
+                <div class="bg-white w-full max-w-lg p-6 rounded-lg shadow-xl">
+                    <h3 class="text-lg font-bold mb-4">거래 후기 작성</h3>
+                    <form id="reviewForm" data-product-id="{{ product.id }}" onsubmit="submitReview(event)" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">별점</label>
+                            <div class="flex gap-2">
+                                {% for i in "12345"|make_list %}
+                                <button type="button" 
+                                        data-rating="{{ forloop.counter }}"
+                                        class="rating-star text-2xl text-gray-300 hover:text-yellow-400 transition-colors">
+                                    <span class="sr-only">{{ forloop.counter }}점</span>
+                                    <span aria-hidden="true">★</span>
+                                </button>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="rating" id="ratingInput" value="5">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">후기 내용</label>
+                            <textarea name="content" 
+                                      class="w-full px-3 py-2 border rounded-lg"
+                                      rows="4"
+                                      required></textarea>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" 
+                                    onclick="closeReviewModal()"
+                                    class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                                취소
+                            </button>
+                            <button type="submit"
+                                    class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                                등록하기
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 채팅 모달 -->
+<div id="chatModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="bg-white rounded-lg p-6 max-w-lg mx-auto mt-20">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">채팅하기</h3>
+            <button type="button" 
+                    onclick="chatSystem.closeModal()" 
+                    class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        
+        <div id="messages" class="h-96 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg"></div>
+        
+        <form id="messageForm" class="flex gap-2">
+            {% csrf_token %}
+            <input type="text" name="content" class="flex-1 px-4 py-2 border rounded-lg" 
+                   placeholder="메시지를 입력하세요" required>
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                전송
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+const chatSystem = {
+    modal: null,
+    messages: null,
+    form: null,
+    
+    init() {
+        console.log('Initializing chat system...');
+        this.modal = document.getElementById('chatModal');
+        this.messages = document.getElementById('messages');
+        this.form = document.getElementById('messageForm');
+        
+        console.log('Modal element:', this.modal);
+        console.log('Messages element:', this.messages);
+        console.log('Form element:', this.form);
+        
+        if (this.form) {
+            this.form.addEventListener('submit', e => this.handleSubmit(e));
+        }
+        
+        const chatButton = document.getElementById('chatButton');
+        console.log('Chat button:', chatButton);
+        
+        if (chatButton) {
+            chatButton.addEventListener('click', () => this.openModal());
+        }
+    },
+    
+    openModal() {
+        console.log('Attempting to open modal...');
+        if (this.modal) {
+            console.log('Opening modal');
+            this.modal.classList.remove('hidden');
+            this.loadMessages();
+            this.startMessagePolling();
+        } else {
+            console.error('Modal element not found!');
+        }
+    },
+    
+    closeModal() {
+        if (this.modal) {
+            this.modal.classList.add('hidden');
+            this.stopMessagePolling();
+        }
+    },
+    
+    async loadMessages() {
+        try {
+            const response = await fetch(`/products/${productId}/messages/`, {
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                    this.messages.innerHTML = '';  // 기존 메시지 초기화
+                    data.messages.forEach(message => this.addMessage(message));
+                    this.messages.scrollTop = this.messages.scrollHeight;
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    },
+    
+    async handleSubmit(e) {
+        e.preventDefault();
+        const content = this.form.content.value.trim();
+        if (!content) return;
+
+        try {
+            const response = await fetch(`/products/${productId}/messages/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ content })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                    this.addMessage(data.message);
+                    this.form.content.value = '';
+                    this.messages.scrollTop = this.messages.scrollHeight;
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('메시지 전송 중 오류가 발생했습니다.');
+        }
+    },
+
+    addMessage(message) {
+        const messageEl = document.createElement('div');
+        messageEl.className = `flex ${message.is_mine ? 'justify-end' : 'justify-start'} mb-4`;
+        messageEl.innerHTML = `
+            <div class="max-w-[70%] ${message.is_mine ? 'bg-blue-500 text-white' : 'bg-gray-100'} rounded-lg px-4 py-2">
+                ${!message.is_mine ? `<div class="text-sm text-gray-600 mb-1">${message.sender_name}</div>` : ''}
+                <p>${message.content}</p>
+                <div class="text-xs ${message.is_mine ? 'text-blue-200' : 'text-gray-500'} text-right mt-1">
+                    ${message.created_at}
+                </div>
+            </div>
+        `;
+        this.messages.appendChild(messageEl);
+    },
+
+    startMessagePolling() {
+        this.messageInterval = setInterval(() => this.loadMessages(), 3000);
+    },
+
+    stopMessagePolling() {
+        if (this.messageInterval) {
+            clearInterval(this.messageInterval);
+        }
+    }
+};
+
+// productId 변수 추가
+const productId = '{{ product.id }}';
+
+async function submitReview(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const productId = form.dataset.productId;
+    const rating = document.getElementById('ratingInput').value;
+    const content = form.querySelector('textarea[name="content"]').value.trim();
+    
+    try {
+        const response = await fetch(`/${productId}/review/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: new URLSearchParams({
+                'rating': rating,
+                'content': content
+            })
+        });
+        
+        if (!response.ok) throw new Error('리뷰 등록에 실패했습니다.');
+        window.location.reload();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message);
+    }
+}
+
+// 이벤트 리스너 중복 제거
+document.addEventListener('DOMContentLoaded', () => {
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.removeEventListener('submit', submitReview);  // 기존 리스너 제거
+        reviewForm.addEventListener('submit', submitReview);     // 새 리스너 추가
+    }
+});
+
+function openReviewModal() {
+    document.getElementById('reviewModal').classList.remove('hidden');
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewModal').classList.add('hidden');
+    // 모달 닫을 때 폼 초기화
+    document.getElementById('reviewForm').reset();
+    // 별점 UI 초기화
+    document.querySelectorAll('.rating-star').forEach(star => {
+        star.classList.remove('text-yellow-400');
+        star.classList.add('text-gray-300');
+    });
+}
+
+// 별점 선택 기능
+document.addEventListener('DOMContentLoaded', () => {
+    const stars = document.querySelectorAll('.rating-star');
+    const ratingInput = document.getElementById('ratingInput');
+    
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const rating = star.dataset.rating;
+            ratingInput.value = rating;
+            
+            // 별점 UI 업데이트
+            stars.forEach(s => {
+                if (s.dataset.rating <= rating) {
+                    s.classList.add('text-yellow-400');
+                    s.classList.remove('text-gray-300');
+                } else {
+                    s.classList.remove('text-yellow-400');
+                    s.classList.add('text-gray-300');
+                }
+            });
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof chatSystem !== 'undefined') {
+        chatSystem.init();
+    }
+});
+</script>
+{% endblock %}

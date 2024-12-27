@@ -1,0 +1,109 @@
+{% load static %}
+
+<div class="relative bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg p-8 overflow-hidden">
+    <!-- 배경 장식 -->
+    <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-100 rounded-full opacity-20 -mr-32 -mt-32"></div>
+    
+    <div class="relative flex items-start gap-8">
+        <!-- 프로필 이미지 -->
+        <div class="relative group">
+            <div class="w-28 h-28 rounded-2xl overflow-hidden transform rotate-2 transition-transform hover:rotate-0 shadow-xl">
+                {% if seller.profile.profile_image %}
+                    <img src="{{ seller.profile.profile_image.url }}" 
+                         alt="{{ seller.username }}의 프로필" 
+                         class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full bg-gradient-to-br from-yellow-200 to-yellow-400 flex items-center justify-center">
+                        <span class="text-4xl font-bold text-white">{{ seller.username.0|upper }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 사용자 정보 -->
+        <div class="flex-1 pt-2">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h3 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600">
+                        @{{ seller.username }}
+                    </h3>
+                    <p class="text-gray-500 mt-1">{{ seller.profile.bio|default:"안녕하세요!" }}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% if user.is_authenticated and user != seller %}
+                        <button 
+                            onclick="handleFollowClick(event, '{{ seller.id }}')"
+                            data-user-id="{{ seller.id }}"
+                            data-following="{{ is_following|lower }}"
+                            class="follow-button px-4 py-2 rounded-full text-sm font-medium {% if is_following %}bg-gray-200 text-gray-800{% else %}bg-orange-500 text-white{% endif %} transition-colors">
+                            {% if is_following %}팔로잉{% else %}팔로우{% endif %}
+                        </button>
+                    {% endif %}
+                    <button onclick="showFollowModal('followers')" class="px-4 py-1 bg-black text-white rounded-full text-sm">
+                        팔로워 <span class="font-bold">{{ seller.follower_relations.count }}</span>
+                    </button>
+                    <button onclick="showFollowModal('following')" class="px-4 py-1 bg-black text-white rounded-full text-sm">
+                        팔로잉 <span class="font-bold">{{ seller.following_relations.count }}</span>
+                    </button>
+                    <span class="text-gray-400">•</span>
+                    <span class="text-gray-500">{{ seller.created_at|timesince }} 전 가입</span>
+                </div>
+            </div>
+
+            <!-- 상세 정보 -->
+            <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm">
+                {% if seller.profile.location %}
+                    <span class="font-medium">{{ seller.profile.location }}</span>
+                    {% if seller.profile.school or seller.profile.grade or seller.profile.department %}
+                        <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    {% endif %}
+                {% endif %}
+                {% if seller.profile.school %}
+                    <span class="font-medium">{{ seller.profile.school }}</span>
+                {% endif %}
+                {% if seller.profile.grade %}
+                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    <span>{{ seller.profile.grade }}학년</span>
+                {% endif %}
+                {% if seller.profile.department %}
+                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                    <span>{{ seller.profile.department }}</span>
+                {% endif %}
+            </div>
+
+            {% if seller.profile.gender or seller.profile.height or seller.profile.weight or seller.profile.usual_size %}
+            <div class="mt-3 flex items-center gap-3 text-sm text-gray-600">
+                <div class="flex items-center gap-2">
+                    {% if seller.profile.gender %}
+                        <span class="px-3 py-1 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm">
+                            {% if seller.profile.gender == 'F' %}
+                                여성
+                            {% else %}
+                                남성
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                    {% if seller.profile.usual_size %}
+                        <span class="px-3 py-1 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm">
+                            {{ seller.profile.usual_size }}
+                        </span>
+                    {% endif %}
+                    {% if seller.profile.height %}
+                        <span class="px-3 py-1 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm">
+                            {{ seller.profile.height }}cm
+                        </span>
+                    {% endif %}
+                    {% if seller.profile.weight %}
+                        <span class="px-3 py-1 bg-white/80 backdrop-blur-sm rounded-lg shadow-sm">
+                            {{ seller.profile.weight }}kg
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div> 
+
+<!-- 팔로우 기능을 위한 JavaScript 수정 -->
+<script src="{% static 'js/profile.js' %}"></script> 
