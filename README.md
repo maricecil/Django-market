@@ -126,3 +126,4 @@
 - 무한스크롤
 - 검색 및 필터기능
 - 지역api
+![과제ERD](https://github.com/user-attachments/assets/0bd7c16f-abea-48b0-96fb-698d8b5fc4ff)
