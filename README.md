@@ -115,6 +115,16 @@
 - Django를 사용하여 사용자 인증, 데이터베이스 마이그레이션 및 CRUD 작업을 신속하게 처리하도록 했습니다.
 - Django 템플릿과 TailwindCSS를 사용하여 깔끔한 반응형 UI를 빠르게 구현했습니다.
 
+Django==5.0
+Pillow==10.1.0
+python-dotenv==1.0.0
+django-tailwind==3.8.0
+django-browser-reload==1.12.1
+django-compressor==4.4
+django-htmx==1.17.2
+whitenoise==6.6.0
+gunicorn==21.2.0
+psycopg2-binary==2.9.9  
 
 # 5. 향후 개선 계획
 아직까지 구현되지 못한 기능들을 구현하여 완성도를 높이고자 합니다.
