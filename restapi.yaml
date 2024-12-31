@@ -1,0 +1,389 @@
+paths:
+  /accounts/signup/:
+    post:
+      tags:
+        - Accounts
+      summary: 회원가입
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                profile_image:
+                  type: string
+                  format: binary
+                  nullable: true
+      responses:
+        '201':
+          description: 회원가입 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+  /accounts/login/:
+    post:
+      tags:
+        - Accounts
+      summary: 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      username:
+                        type: string
+  /accounts/profile/{username}/:
+    get:
+      tags:
+        - Accounts
+      summary: 프로필 조회
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 프로필 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  profile_image:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        price:
+                          type: integer
+                        image:
+                          type: string
+                  followers_count:
+                    type: integer
+                  following_count:
+                    type: integer
+  /products/:
+    get:
+      tags:
+        - Products
+      summary: 상품 목록 조회
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [uniform, book, supply]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 상품 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    price:
+                      type: integer
+                    image:
+                      type: string
+                    seller:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                    likes_count:
+                      type: integer
+    post:
+      tags:
+        - Products
+      summary: 상품 등록
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: integer
+                category:
+                  type: string
+                  enum: [uniform, book, supply]
+                condition:
+                  type: string
+                  enum: [new, used]
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 상품 등록 성공
+  /products/{id}/:
+    get:
+      tags:
+        - Products
+      summary: 상품 상세 조회
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 상품 상세 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  price:
+                    type: integer
+                  category:
+                    type: string
+                  condition:
+                    type: string
+                  image:
+                    type: string
+                  seller:
+                    type: object
+                    properties:
+                      username:
+                        type: string
+                  created_at:
+                    type: string
+                    format: date-time
+    put:
+      tags:
+        - Products
+      summary: 상품 수정
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: integer
+                category:
+                  type: string
+                condition:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 상품 수정 성공
+  /products/{id}/like/:
+    post:
+      tags:
+        - Social
+      summary: 상품 좋아요/취소
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 좋아요 처리 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_liked:
+                    type: boolean
+                  likes_count:
+                    type: integer
+
+  /accounts/{username}/follow/:
+    post:
+      tags:
+        - Social
+      summary: 사용자 팔로우/언팔로우
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 팔로우 처리 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_following:
+                    type: boolean
+                  followers_count:
+                    type: integer
+  /messages/{product_id}/:
+    get:
+      tags:
+        - Messages
+      summary: 메시지 목록 조회
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 메시지 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        sender:
+                          type: string
+                        content:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        is_read:
+                          type: boolean
+    post:
+      tags:
+        - Messages
+      summary: 메시지 전송
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        '201':
+          description: 메시지 전송 성공
